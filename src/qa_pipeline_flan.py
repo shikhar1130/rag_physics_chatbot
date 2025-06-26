@@ -11,7 +11,7 @@ def build_qa_chain(
     hf_embed_model: str = "sentence-transformers/all-MiniLM-L6-v2",
     hf_gen_model: str = "google/flan-t5-small",
     temperature: float = 1.0,
-    k: int = 5
+    k: int = 2
 ) -> RetrievalQA:
     """Build a RetrievalQA chain using:
        • sentence-transformers/all-MiniLM-L6-v2 for embeddings
@@ -38,7 +38,6 @@ def build_qa_chain(
         device=-1,
         max_length=512,
         do_sample=False,
-        temperature=temperature
     )
     llm = HuggingFacePipeline(pipeline=gen_pipe)
 

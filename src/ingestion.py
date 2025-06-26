@@ -23,7 +23,7 @@ def load_paper(path: Path) -> str:
     return "\n".join(text)
 
 # 2. Break a long string into overlapping chunks
-def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> List[str]:
+def chunk_text(text: str, chunk_size: int = 600, overlap: int = 200) -> List[str]:
     """
     Splits text into pieces of ~chunk_size characters, overlapping by overlap.
     """
