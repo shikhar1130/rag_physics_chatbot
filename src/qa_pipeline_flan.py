@@ -10,20 +10,24 @@ def build_qa_chain(
     meta_path: Path = Path("data/meta.json"),
     hf_embed_model: str = "sentence-transformers/all-MiniLM-L6-v2",
     hf_gen_model: str = "google/flan-t5-small",
-    temperature: float = 0.0,
+    temperature: float = 1.0,
     k: int = 5
 ) -> RetrievalQA:
     """Build a RetrievalQA chain using:
        • sentence-transformers/all-MiniLM-L6-v2 for embeddings
        • google/flan-t5-small for generation"""
-    # 1. Load FAISS vectorstore and turn it into a LangChain retriever
-    vectorstore = setup_retriever(
+       
+    # 1. The setup_retriever function now returns the final retriever object.
+    #    Let's name the variable appropriately.
+    retriever = setup_retriever(
         index_path=index_path,
         meta_path=meta_path,
         model_name=hf_embed_model
     )
-    retriever = vectorstore.as_retriever(search_kwargs={"k": k})  # :contentReference[oaicite:0]{index=0}
-
+    # Set the search_kwargs directly on our retriever instance.
+    retriever.search_kwargs = {"k": k}
+    
+    # The erroneous call to .as_retriever() has been removed.
 
     # 2. Build the HuggingFace generation pipeline
     from transformers import pipeline as hf_pipeline
@@ -34,14 +38,15 @@ def build_qa_chain(
         device=-1,
         max_length=512,
         do_sample=False,
+        temperature=temperature
     )
     llm = HuggingFacePipeline(pipeline=gen_pipe)
 
 
-    # 3. Wire up the RetrievalQA chain
+    # 3. Wire up the RetrievalQA chain with the corrected retriever
     return RetrievalQA.from_chain_type(
         llm=llm,
-        chain_type="stuff",
+        chain_type="map_reduce",
         retriever=retriever,
         return_source_documents=True
     )
@@ -94,14 +99,29 @@ def main():
         k=args.k
     )
 
-    # Run the chain and print results
-    answer = qa.run(args.question)
+    # --- Start of Changed Block ---
+
+    # Run the chain once by calling it as a function and store the full result.
+    # The input must be a dictionary with the key 'query'.
+    result = qa({"query": args.question})
+
+    # Extract the answer and source documents from the result dictionary.
+    answer = result.get('result', 'No answer was generated.')
+    sources = result.get('source_documents', [])
+
     print("Answer:", answer)
 
-    sources = qa({"query": args.question})["source_documents"]
     print("\nSource Documents:")
-    for doc in sources:
-        print(f"- {doc.metadata['doc_id']}  {doc.page_content[:200]}...")
+    if sources:
+        for doc in sources:
+            # Clean up page_content display to avoid excessive newlines
+            page_content_preview = ' '.join(doc.page_content.split())[:200]
+            print(f"- {doc.metadata['doc_id']}: {page_content_preview}...")
+    else:
+        print("No source documents were retrieved.")
+    
+    # --- End of Changed Block ---
+
 
 if __name__ == "__main__":
     main()
