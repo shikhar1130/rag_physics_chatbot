@@ -13,19 +13,19 @@ def build_qa_chain(
     temperature: float = 0.0,
     k: int = 5
 ) -> RetrievalQA:
-    """
-    Build a RetrievalQA chain using:
-      • sentence-transformers/all-MiniLM-L6-v2 for retrieval embeddings
-      • google/flan-t5-small for generation (text2text)
-    """
-    # 1. Initialize the retriever
-    retriever = setup_retriever(
+    """Build a RetrievalQA chain using:
+       • sentence-transformers/all-MiniLM-L6-v2 for embeddings
+       • google/flan-t5-small for generation"""
+    # 1. Load FAISS vectorstore and turn it into a LangChain retriever
+    vectorstore = setup_retriever(
         index_path=index_path,
         meta_path=meta_path,
         model_name=hf_embed_model
     )
+    retriever = vectorstore.as_retriever(search_kwargs={"k": k})  # :contentReference[oaicite:0]{index=0}
 
-    # 2. Create a HuggingFace text2text‐generation pipeline
+
+    # 2. Build the HuggingFace generation pipeline
     from transformers import pipeline as hf_pipeline
     gen_pipe = hf_pipeline(
         "text2text-generation",
@@ -33,9 +33,10 @@ def build_qa_chain(
         tokenizer=hf_gen_model,
         device=-1,
         max_length=512,
-        do_sample=False
+        do_sample=False,
     )
     llm = HuggingFacePipeline(pipeline=gen_pipe)
+
 
     # 3. Wire up the RetrievalQA chain
     return RetrievalQA.from_chain_type(

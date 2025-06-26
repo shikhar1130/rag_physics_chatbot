@@ -19,7 +19,7 @@ from .ingestion import load_paper, chunk_text, ingest_folder
 from .embedding_index import load_chunks, create_embeddings, build_and_save_index
 
 # Retrieval
-from .retriever import FAISSRetriever
+from .retriever import setup_retriever
 
 # QA Pipeline
 from .qa_pipeline import build_qa_chain
@@ -33,10 +33,9 @@ __all__ = [
     "load_paper", "chunk_text", "ingest_folder",
     # embedding & indexing
     "load_chunks", "create_embeddings", "build_and_save_index",
-    # retrieval
-    "FAISSRetriever",
     # qa pipeline
     "build_qa_chain",
     # evaluation
     "load_benchmark", "evaluate",
+    "setup_retriever",
 ]
